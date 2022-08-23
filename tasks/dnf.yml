@@ -1,0 +1,53 @@
+---
+- name: DNF - Get files with invalid checksums (rpm)
+  shell: "grep '^..5' {{ temp_dir }}/rpmverify.txt | awk '{ print $NF }'"
+  register: invalid_checksum_files
+  changed_when: False
+
+- name: DNF - The cryptographic hash of system files and commands must match vendor values
+  debug:
+    msg: |
+      The following files have checksums that differ from the checksum provided
+      with their package. Each of these should be verified manually to ensure
+      they have not been modified by an unauthorized user.
+      {% for filename in invalid_checksum_files.stdout_lines %}
+        {{ filename }}
+      {% endfor %}
+  when:
+    - invalid_checksum_files is defined
+    - invalid_checksum_files.stdout is defined
+
+- name: DNF - Clean requirements/dependencies when removing packages
+  lineinfile:
+    dest: /etc/dnf/dnf.conf
+    regexp: "^(#)?clean_requirements_on_remove"
+    line: "clean_requirements_on_remove=1"
+    state: present
+
+- name: DNF - Check if /etc/dnf/automatic.conf exists
+  stat:
+    path: /etc/dnf/automatic.conf
+  check_mode: no
+  register: dnf_automatic_config_check
+
+- name: DNF - Enable automatic package updates
+  lineinfile:
+    dest: /etc/dnf/automatic.conf
+    regexp: "^apply_updates"
+    line: "apply_updates = yes"
+    state: present
+  when:
+    - dnf_automatic_config_check.stat.exists | bool
+
+- name: DNF - Upgrade all packages
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+
+- name: DNF - Install EPEL Repo
+  ansible.builtin.dnf:
+    name: "{{ packages }}"
+    state: latest
+  vars:
+    packages:
+    - epel-release

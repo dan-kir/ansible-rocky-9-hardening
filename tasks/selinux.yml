@@ -1,0 +1,44 @@
+---
+- name: SELinux - Install SELinux policy and utils
+  ansible.builtin.dnf:
+    name: "{{ packages }}"
+    state: latest
+  vars:
+    packages:
+      - python3-libselinux
+      - policycoreutils-python-utils
+      - selinux-policy
+      - selinux-policy-targeted
+
+- name: SELinux - Ensure SELinux is in enforcing mode on the next reboot
+  selinux:
+    state: enforcing
+    policy: targeted
+  register: selinux_status_change
+  changed_when: selinux_status_change is changed and ansible_facts['selinux']['status'] != 'disabled'
+
+- name: SELinux - Relabel files on next boot if SELinux mode changed
+  file:
+    path: /.autorelabel
+    state: touch
+  when:
+    - selinux_status_change is changed
+
+- name: SELinux - Check for unlabeled device files
+  command: "find /dev -context '*unlabeled_t*'"
+  register: unlabeled_devices
+  changed_when: False
+  check_mode: no
+  when:
+    - ansible_facts['selinux']['status'] == 'enabled'
+
+- name: SELinux - All system device files must be correctly labeled to prevent unauthorized modification.
+  debug:
+    msg: |
+      Devices were found without SELinux labels:
+      {% for device in unlabeled_devices.stdout_lines %}
+      {{ device }}
+      {% endfor %}
+  when:
+    - unlabeled_devices.stdout is defined
+    - unlabeled_devices.stdout | length > 0

@@ -1,0 +1,38 @@
+---
+- name: Create temporary directory to hold any temporary files
+  tempfile:
+    state: directory
+    suffix: hardening
+  register: mktemp_result
+  
+- name: Set a fact for the temporary directory
+  set_fact:
+    temp_dir: "{{ mktemp_result.path }}"
+  changed_when: False
+
+- ansible.builtin.import_tasks: dnf.yml
+
+- ansible.builtin.import_tasks: auditd.yml
+  when:
+    - auditd_enabled | bool
+
+- ansible.builtin.import_tasks: laurel.yml
+  when:
+    - laurel_enabled | bool
+    - auditd_enabled | bool
+
+- ansible.builtin.import_tasks: selinux.yml
+
+- ansible.builtin.import_tasks: fail2ban.yml
+  when:
+    - fail2ban_enabled | bool
+
+- ansible.builtin.import_tasks: sshd.yml
+
+- ansible.builtin.import_tasks: misc.yml
+
+- ansible.builtin.import_tasks: kernel.yml
+
+- ansible.builtin.import_tasks: aide.yml
+  when:
+    - aide_enabled | bool

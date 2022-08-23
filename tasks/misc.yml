@@ -1,0 +1,55 @@
+---
+- name: Miscellaneous - Install haveged
+  ansible.builtin.dnf:
+    name: "{{ packages }}"
+    state: latest
+  vars:
+    packages:
+    - haveged
+
+- name: Miscellaneous - Start and enable haveged
+  ansible.builtin.systemd:
+    name: haveged.service
+    enabled: yes
+    state: started
+    masked: no
+
+- name: Miscellaneous - Install Rootkit Hunter
+  ansible.builtin.dnf:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - rkhunter
+
+- name: Miscellaneous - Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+
+- name: Miscellaneous - Install chrony
+  ansible.builtin.dnf:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - chrony
+
+- name: Miscellaneous - Start and enable chronyd
+  ansible.builtin.systemd:
+    name: chronyd.service
+    enabled: yes
+    state: started
+    masked: no
+
+- name: Miscellaneous - Check if chrony configuration file exists
+  ansible.builtin.stat:
+    path: "/etc/chrony.conf"
+  register: chrony_conf_check
+
+- name: Miscellaneous - Copy motd banner
+  ansible.builtin.template:
+    src: motd.j2
+    dest: "/etc/motd"
+    owner: root
+    group: root
+    mode: '0755'
