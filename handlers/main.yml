@@ -10,9 +10,8 @@
     state: restarted
 
 - name: Restart auditd
-  ansible.builtin.systemd:
-    name: auditd.service
-    state: restarted
+  ansible.builtin.command: "/sbin/service auditd restart"
+  check_mode: no
 
 - name: Restart system
   ansible.builtin.reboot:
