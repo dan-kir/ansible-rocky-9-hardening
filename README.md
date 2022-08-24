@@ -21,6 +21,9 @@ Requirements
 ------------
 Requires Ansible 2.10 or later. This role has only been tested on Rocky Linux 9 (Blue Onyx).
 
+dnf install ansible-core
+ansible-galaxy collection install ansible.posix
+ansible-galaxy collection install community.general
 
 Role Variables
 --------------

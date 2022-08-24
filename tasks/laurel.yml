@@ -56,6 +56,24 @@
     mode: 0640
   register: laurel_config
 
+- name: LAUREL - Coopy SELinux Laurel Policy
+  ansible.builtin.copy:
+    src: laurel.pp
+    dest: /tmp/laurel.pp
+    owner: root
+    group: root
+    mode: 0640
+
+- name: LAUREL - Install SELinux Laurel Policy
+  ansible.builtin.command: "semodule -i /tmp/laurel.pp"
+  changed_when: false
+  ignore_errors: yes
+
+- name: LAUREL - SELinux Restorecon
+  ansible.builtin.command: "restorecon -v -R -F /usr/local/sbin/laurel /etc/laurel /var/log/laurel"
+  changed_when: false
+  ignore_errors: yes
+
 - name: LAUREL - Tell auditd(8) to re-evaluate its configuration
   ansible.builtin.shell: "pkill -HUP auditd"
   changed_when: false
